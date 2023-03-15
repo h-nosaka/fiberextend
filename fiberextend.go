@@ -174,7 +174,7 @@ func New(config IFiberExConfig) *IFiberEx {
 				SlowThreshold:             200 * time.Millisecond,
 				Colorful:                  true,
 				IgnoreRecordNotFoundError: true,
-				LogLevel:                  glogger.Info,
+				LogLevel:                  glogger.Warn,
 			}),
 		)
 		GLog = &gzap
@@ -278,6 +278,8 @@ func (p *IFiberEx) NewApp() *fiber.App {
 			File: *p.Config.IconFile,
 			URL:  *p.Config.IconUrl,
 		}))
+	} else {
+		app.Use(favicon.New())
 	}
 
 	p.App = app

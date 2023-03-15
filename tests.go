@@ -43,6 +43,7 @@ const (
 )
 
 type ITestCase struct {
+	It     string             // テストケースの説明
 	Method ITestMethod        // assertしたい内容
 	Want   interface{}        // 期待値
 	Path   string             // jsonpath `$.id`
@@ -138,6 +139,7 @@ func (p *IFiberExTest) Api(message string, request *ITestRequest, status int, as
 	p.It(message)
 	api := request.Call(p.Tester).Expect(p.t).Status(status)
 	for _, assert := range asserts {
+		p.It(assert.It)
 		api = api.Assert(assert.ApiAssert())
 	}
 	api.End()
@@ -287,6 +289,7 @@ func (p *IFiberExTest) Job(it string, before func(), job func(), asserts ...*ITe
 	before()
 	job()
 	for _, assert := range asserts {
+		p.It(assert.It)
 		if err := assert.Assert(); err != nil {
 			p.t.Error(err)
 		}
