@@ -15,8 +15,8 @@ services:
     build: .
     command: air -build.cmd "go build -C ./examples -o ../tmp/main -buildvcs=false"
     env_file: .env
-    ports:
-      - 8080:80
+    # ports:
+    #   - 8080:80
     volumes:
       - .:/opt/app
     depends_on:
@@ -26,8 +26,8 @@ services:
     image: *mariadb
     volumes:
       - db_data:/var/lib/mysql
-    ports:
-      - "3306:3306"
+    # ports:
+    #   - "3306:3306"
     hostname: localhost
     restart: always
     environment:
@@ -38,15 +38,15 @@ services:
       MYSQL_DATABASE: app
   redis:
     image: *redis
-    ports:
-      - "6379:6379"
+    # ports:
+    #   - "6379:6379"
     volumes:
       - redis_data:/data
     logging: *logging
   es:
     image: *es
-    ports:
-      - 9200:9200
+    # ports:
+    #   - 9200:9200
     environment:
       - ES_HEAP_SIZE=512m
       # - ES_JAVA_OPTS="-Xms512m -Xmx512m"

@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jrallison/go-workers"
 	ext "github.com/h-nosaka/fiberextend"
+	"github.com/jrallison/go-workers"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -28,7 +28,9 @@ func TestJob(t *testing.T) {
 		},
 		Concurrency: 1,
 		Class:       "test_class",
-		Args:        map[string]interface{}{"foo": "bar"},
+		Args: func() interface{} {
+			return map[string]interface{}{"foo": "bar"}
+		},
 	}
 	test.Ex.NewJob(job1)
 	test.Ex.JobRun()
@@ -74,7 +76,9 @@ func TestSchedule(t *testing.T) {
 		Concurrency: 1,
 		Schedule:    ext.String("@every 1s"),
 		Class:       "test_class",
-		Args:        map[string]interface{}{"foo": "bar"},
+		Args: func() interface{} {
+			return map[string]interface{}{"foo": "bar"}
+		},
 	}
 	test.Ex.NewJob(job2)
 	test.Ex.JobRun()

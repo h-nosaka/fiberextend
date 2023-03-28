@@ -16,7 +16,7 @@ type IJob struct {
 	Concurrency int                    // 優先度
 	Schedule    *string                // cron形式 https://github.com/bamzi/jobrunner
 	Class       string                 // スケジュール実行時のクラス名
-	Args        interface{}            // スケジュール実行時のパラメータ
+	Args        func() interface{}     // スケジュール実行時のパラメータ
 	Middlewares []workers.Action       // ジョブ特有のアクション
 }
 
@@ -35,7 +35,7 @@ func (p jobInfo) Call(queue string, msg *workers.Msg, next func() bool) bool {
 func (p IJob) Run() {
 	if Ex.checkCronNode() { // cronはシングルノードで動作するようにチェックする
 		Log.Info("scheduled job start", zap.Any("job", p))
-		if _, err := workers.Enqueue(p.Name, p.Class, p.Args); err != nil {
+		if _, err := workers.Enqueue(p.Name, p.Class, p.Args()); err != nil {
 			Log.Error(err.Error(), zap.Any("job", p))
 		}
 	}
