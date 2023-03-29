@@ -20,7 +20,7 @@ func zapLogger(logger *zap.Logger) func(c *fiber.Ctx) error {
 		fields := []zap.Field{
 			zap.Int("pid", os.Getpid()),
 			zap.String("elaps", stop.Sub(start).String()),
-			zap.String("ip", c.IP()),
+			zap.Any("ip", c.IPs()),
 			zap.String("requestid", c.Locals("requestid").(string)),
 			zap.String("userid", c.Locals("userid").(string)),
 			zap.Int("status", c.Response().StatusCode()),
