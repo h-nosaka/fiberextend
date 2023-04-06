@@ -54,6 +54,7 @@ func Routes(ex *ext.IFiberEx) {
 func main() {
 	ex := ext.New(ext.IFiberExConfig{
 		DevMode: ext.Bool(true),
+		Host:    "localhost:8080",
 		UseDB:   true,
 		DBConfig: &ext.IDBConfig{
 			Addr: "db:3306",

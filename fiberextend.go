@@ -3,6 +3,7 @@ package fiberextend
 import (
 	"context"
 	"flag"
+	"fmt"
 	"net"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/favicon"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
+	"github.com/gofiber/swagger"
 	"github.com/google/uuid"
 	"github.com/imdario/mergo"
 	"github.com/redis/go-redis/v9"
@@ -58,6 +60,8 @@ type IFiberExConfig struct {
 	ErrorHandler     func(*fiber.Ctx, error) error
 	AppName          *string
 	BodyLimit        *int
+	// サービスホスト
+	Host string
 	// ページング処理
 	PagePer *int
 	// データベース接続
@@ -240,15 +244,15 @@ func New(config IFiberExConfig) *IFiberEx {
 	return Ex
 }
 
-func RunCommand() (string, bool) {
+func RunCommand() (string, []string, bool) {
 	flag.Parse()
 	args := flag.Args()
 	if len(args) > 1 {
 		if args[0] == "run" {
-			return args[1], true
+			return args[1], args[2:], true
 		}
 	}
-	return "", false
+	return "", args, false
 }
 
 func (p *IFiberEx) NewApp() *fiber.App {
@@ -280,6 +284,15 @@ func (p *IFiberEx) NewApp() *fiber.App {
 		}))
 	} else {
 		app.Use(favicon.New())
+	}
+
+	if p.Config.DevMode != nil && *p.Config.DevMode {
+		app.Static("docs/", "./docs")
+		app.Get("/swagger/*", swagger.New(swagger.Config{
+			URL:          fmt.Sprintf("http://%s/docs/swagger.json", p.Config.Host),
+			DeepLinking:  false,
+			DocExpansion: "none",
+		}))
 	}
 
 	p.App = app
