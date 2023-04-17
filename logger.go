@@ -4,6 +4,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
 )
@@ -37,5 +38,35 @@ func zapLogger(logger *zap.Logger) func(c *fiber.Ctx) error {
 		logger.With(fields...).Info("api.request")
 
 		return nil
+	}
+}
+
+func (p *IFiberEx) LogError(err error, fields ...zap.Field) {
+	p.Log.Error(err.Error(), fields...)
+	if p.Sentry != nil {
+		p.Sentry.CaptureException(err, &sentry.EventHint{
+			Data:              fields,
+			OriginalException: err,
+		}, p.Config.SentryScope)
+	}
+}
+
+func (p *IFiberEx) LogFatal(err error, fields ...zap.Field) {
+	p.Log.Fatal(err.Error(), fields...)
+	if p.Sentry != nil {
+		p.Sentry.CaptureException(err, &sentry.EventHint{
+			Data:              fields,
+			OriginalException: err,
+		}, p.Config.SentryScope)
+	}
+}
+
+func (p *IFiberEx) LogWarn(err error, fields ...zap.Field) {
+	p.Log.Warn(err.Error(), fields...)
+	if p.Sentry != nil {
+		p.Sentry.CaptureException(err, &sentry.EventHint{
+			Data:              fields,
+			OriginalException: err,
+		}, p.Config.SentryScope)
 	}
 }

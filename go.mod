@@ -37,7 +37,7 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
-	github.com/mailru/easyjson v0.7.6 // indirect
+	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/robfig/cron/v3 v3.0.0 // indirect
 	github.com/swaggo/files/v2 v2.0.0 // indirect
 	github.com/swaggo/swag v1.8.12 // indirect
@@ -53,6 +53,7 @@ require (
 	github.com/alicebob/miniredis/v2 v2.30.0
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/elastic/go-elasticsearch/v8 v8.6.0
+	github.com/getsentry/sentry-go v0.20.0
 	github.com/go-playground/validator/v10 v10.11.2
 	github.com/gofiber/swagger v0.1.10
 	github.com/google/uuid v1.3.0

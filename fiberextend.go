@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/getsentry/sentry-go"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -31,6 +32,7 @@ var DB *gorm.DB
 var Redis *redis.Client
 var ES *elasticsearch.Client
 var Validator *validator.Validate
+var Sentry *sentry.Client
 
 var background = context.Background()
 
@@ -42,6 +44,7 @@ type IFiberEx struct {
 	DB        *gorm.DB
 	Redis     *redis.Client
 	ES        *elasticsearch.Client
+	Sentry    *sentry.Client
 	Validator *validator.Validate
 }
 
@@ -84,6 +87,10 @@ type IFiberExConfig struct {
 	JobDatabase int
 	JobPool     int
 	JobProcess  int
+	// Sentry
+	SentryDsn   *string
+	SentryScope *sentry.Scope
+	SentryEnv   string
 }
 
 type IDBConfig struct {
@@ -232,6 +239,20 @@ func New(config IFiberExConfig) *IFiberEx {
 		panic(err)
 	}
 
+	// sentry
+	if config.SentryDsn != nil {
+		Sentry, err = sentry.NewClient(sentry.ClientOptions{
+			Dsn:         *config.SentryDsn,
+			Environment: config.SentryEnv,
+		})
+		if err != nil {
+			panic(err)
+		}
+		if config.SentryScope != nil {
+			config.SentryScope = sentry.NewScope()
+		}
+	}
+
 	Ex = &IFiberEx{
 		NodeId:    obj.String(),
 		Config:    config,
@@ -240,6 +261,7 @@ func New(config IFiberExConfig) *IFiberEx {
 		Redis:     Redis,
 		ES:        ES,
 		Validator: Validator,
+		Sentry:    Sentry,
 	}
 	return Ex
 }
