@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -62,6 +63,7 @@ func NewTest(t *testing.T, config IFiberExConfig) *IFiberExTest {
 	// redisをminiredisに置き換え
 	var r *miniredis.Miniredis
 	if config.UseRedis {
+		Redis = nil // redisを空にする
 		r = miniredis.RunT(t)
 		if config.RedisOptions == nil {
 			config.RedisOptions = &redis.Options{}
@@ -80,6 +82,10 @@ func NewTest(t *testing.T, config IFiberExConfig) *IFiberExTest {
 	}
 	// apitestを初期化
 	test.Tester = apitest.New().HandlerFunc(test.fiberToHandlerFunc())
+	// gormにデバグを追加
+	if os.Getenv("DEBUG") == "1" {
+		test.Ex.DB = test.Ex.DB.Debug()
+	}
 	return test
 }
 
