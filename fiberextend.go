@@ -169,13 +169,16 @@ func New(config IFiberExConfig) *IFiberEx {
 
 	// logger初期化
 	if Log == nil {
-		var logger *zap.Logger
-		var err error
+		var con zap.Config
 		if config.DevMode != nil && *config.DevMode {
-			logger, err = zap.NewDevelopment()
+			con = zap.NewDevelopmentConfig()
+			if config.TestMode != nil && *config.TestMode {
+				con.Level.SetLevel(zap.ErrorLevel) // テストモードではエラーしかログ出力しない
+			}
 		} else {
-			logger, err = zap.NewProduction()
+			con = zap.NewProductionConfig()
 		}
+		logger, err := con.Build()
 		if err != nil {
 			panic(err)
 		}

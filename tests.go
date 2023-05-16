@@ -70,7 +70,6 @@ func NewTest(t *testing.T, config IFiberExConfig) *IFiberExTest {
 		}
 		config.RedisOptions.Addr = r.Addr()
 		config.JobAddr = r.Addr()
-
 	}
 	ex := New(config)
 	app := ex.NewApp()
