@@ -52,6 +52,9 @@ type IFiberExConfig struct {
 	// 実行モード
 	DevMode  *bool
 	TestMode *bool
+	// 内部パラメータ
+	SecretToken   string
+	TokenExpireAt time.Duration
 	// fiber初期化パラメータ
 	IconFile         *string
 	IconUrl          *string
@@ -91,6 +94,8 @@ type IFiberExConfig struct {
 	SentryDsn   *string
 	SentryScope *sentry.Scope
 	SentryEnv   string
+	// Option 任意のパラメータの格納
+	Options *IFiberExConfigOption
 }
 
 type IDBConfig struct {
@@ -99,6 +104,43 @@ type IDBConfig struct {
 	Pass   string
 	Addr   string
 	DBName string
+}
+
+type IFiberExConfigOption struct {
+	src map[string]interface{}
+}
+
+func NewIFiberExConfigOption(src map[string]interface{}) *IFiberExConfigOption {
+	return &IFiberExConfigOption{
+		src: src,
+	}
+}
+
+func (p *IFiberExConfigOption) GetString(key string) string {
+	switch p.src[key].(type) {
+	case string:
+		return p.src[key].(string)
+	default:
+		return ""
+	}
+}
+
+func (p *IFiberExConfigOption) GetInt(key string) int {
+	switch p.src[key].(type) {
+	case int:
+		return p.src[key].(int)
+	default:
+		return 0
+	}
+}
+
+func (p *IFiberExConfigOption) GetInt64(key string) int64 {
+	switch p.src[key].(type) {
+	case int64:
+		return p.src[key].(int64)
+	default:
+		return 0
+	}
 }
 
 func String(src string) *string {
