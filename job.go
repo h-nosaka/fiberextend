@@ -10,6 +10,8 @@ import (
 	"go.uber.org/zap"
 )
 
+var JobAlive = false
+
 type IJob struct {
 	Name        string                 // ジョブ名
 	Proc        func(msg *workers.Msg) // 処理内容
@@ -69,6 +71,11 @@ func (p *IFiberEx) NewJob(jobs ...*IJob) {
 }
 
 func (p *IFiberEx) JobRun(jobs ...IJob) {
+	workers.DuringDrain(func() {
+		// 終了を検知
+		JobAlive = false
+	})
+	JobAlive = true
 	go workers.Run()
 }
 
