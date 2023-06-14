@@ -298,6 +298,8 @@ func New(config IFiberExConfig) *IFiberEx {
 		}
 	}
 
+	Log.Info("fiberextend.New", zap.String("NodeId", obj.String()))
+
 	Ex = &IFiberEx{
 		NodeId:    obj.String(),
 		Config:    config,
