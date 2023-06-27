@@ -1,12 +1,16 @@
 package fiberextend
 
 import (
+	"fmt"
 	"os"
+	"path/filepath"
+	"runtime"
 	"time"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 func zapLogger(logger *zap.Logger) func(c *fiber.Ctx) error {
@@ -42,7 +46,7 @@ func zapLogger(logger *zap.Logger) func(c *fiber.Ctx) error {
 }
 
 func (p *IFiberEx) LogError(err error, fields ...zap.Field) {
-	p.Log.Error(err.Error(), fields...)
+	p.Log.With(p.LogCaller()).Error(err.Error(), fields...)
 	if p.Sentry != nil {
 		p.Sentry.CaptureException(err, &sentry.EventHint{
 			Data:              fields,
@@ -52,7 +56,7 @@ func (p *IFiberEx) LogError(err error, fields ...zap.Field) {
 }
 
 func (p *IFiberEx) LogFatal(err error, fields ...zap.Field) {
-	p.Log.Fatal(err.Error(), fields...)
+	p.Log.With(p.LogCaller()).Fatal(err.Error(), fields...)
 	if p.Sentry != nil {
 		p.Sentry.CaptureException(err, &sentry.EventHint{
 			Data:              fields,
@@ -62,11 +66,29 @@ func (p *IFiberEx) LogFatal(err error, fields ...zap.Field) {
 }
 
 func (p *IFiberEx) LogWarn(err error, fields ...zap.Field) {
-	p.Log.Warn(err.Error(), fields...)
+	p.Log.With(p.LogCaller()).Warn(err.Error(), fields...)
 	if p.Sentry != nil {
 		p.Sentry.CaptureException(err, &sentry.EventHint{
 			Data:              fields,
 			OriginalException: err,
 		}, p.Config.SentryScope)
 	}
+}
+
+func (p *IFiberEx) Println(args ...interface{}) {
+	p.Log.Info(fmt.Sprintln(args...), p.LogCaller())
+}
+
+func (p *IFiberEx) Printf(base string, args ...interface{}) {
+	p.Log.Info(fmt.Sprintf(base, args...), p.LogCaller())
+}
+
+func (p *IFiberEx) LogCaller() zapcore.Field {
+	i := 1
+	_, file, line, ok := runtime.Caller(i)
+	for ok && filepath.Base(file) == "logger.go" {
+		i++
+		_, file, line, _ = runtime.Caller(i)
+	}
+	return zap.String("caller", fmt.Sprintf("%s:%d", file, line))
 }

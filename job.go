@@ -53,6 +53,7 @@ func (p *IFiberEx) NewJob(jobs ...*IJob) {
 		"process":  fmt.Sprintf("%d", p.Config.JobProcess),
 	})
 	workers.Middleware.Append(&jobInfo{})
+	workers.Logger = p
 
 	// cron実行のためのnode登録
 	if err := Redis.Set(context.Background(), cronActiveNodeKey, p.NodeId, time.Duration(0)).Err(); err != nil {
