@@ -99,11 +99,12 @@ type IFiberExConfig struct {
 }
 
 type IDBConfig struct {
-	Config *gorm.Config
-	User   string
-	Pass   string
-	Addr   string
-	DBName string
+	Config     *gorm.Config
+	User       string
+	Pass       string
+	Addr       string
+	DBName     string
+	IsPostgres *bool
 }
 
 type IFiberExConfigOption struct {

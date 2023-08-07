@@ -28,13 +28,11 @@ services:
       - db_data:/var/lib/mysql
     # ports:
     #   - "3306:3306"
-    hostname: localhost
-    restart: always
+    ports:
+      - "33306:3306"
     environment:
-      MYSQL_USER: app
-      MYSQL_PASSWORD: qwerty
       MYSQL_ROOT_HOST: '%'
-      MYSQL_ROOT_PASSWORD: qwerty
+      MYSQL_ROOT_PASSWORD: 'qwerty'
       MYSQL_DATABASE: app
   redis:
     image: *redis
