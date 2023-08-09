@@ -290,6 +290,7 @@ func New(config IFiberExConfig) *IFiberEx {
 		Sentry, err = sentry.NewClient(sentry.ClientOptions{
 			Dsn:         *config.SentryDsn,
 			Environment: config.SentryEnv,
+			TracesSampleRate: 1.0,
 		})
 		if err != nil {
 			panic(err)

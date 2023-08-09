@@ -1,6 +1,7 @@
 package fiberextend
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -45,33 +46,47 @@ func zapLogger(logger *zap.Logger) func(c *fiber.Ctx) error {
 	}
 }
 
+func (p *IFiberEx) SentryScope(fields []zap.Field) *sentry.Scope {
+	scope := sentry.NewScope()
+	enc := zapcore.NewJSONEncoder(zapcore.EncoderConfig{})
+	buf, err := enc.EncodeEntry(zapcore.Entry{}, fields)
+	if err == nil {
+		extra := map[string]interface{}{}
+		if e := json.Unmarshal(buf.Bytes(), &extra); e == nil {
+			scope.SetExtras(extra)
+		}
+		// scope.SetExtra("fields", buf.String()) // 全体のdumpを取りたい場合は使う
+	}
+	return scope
+}
+
 func (p *IFiberEx) LogError(err error, fields ...zap.Field) {
 	p.Log.With(p.LogCaller()).Error(err.Error(), fields...)
 	if p.Sentry != nil {
+		defer p.Sentry.Flush(2 * time.Second)
 		p.Sentry.CaptureException(err, &sentry.EventHint{
-			Data:              fields,
 			OriginalException: err,
-		}, p.Config.SentryScope)
+		}, p.SentryScope(fields))
 	}
 }
 
 func (p *IFiberEx) LogFatal(err error, fields ...zap.Field) {
 	p.Log.With(p.LogCaller()).Fatal(err.Error(), fields...)
 	if p.Sentry != nil {
+		defer p.Sentry.Flush(2 * time.Second)
 		p.Sentry.CaptureException(err, &sentry.EventHint{
-			Data:              fields,
 			OriginalException: err,
-		}, p.Config.SentryScope)
+		}, p.SentryScope(fields))
 	}
 }
 
 func (p *IFiberEx) LogWarn(err error, fields ...zap.Field) {
 	p.Log.With(p.LogCaller()).Warn(err.Error(), fields...)
 	if p.Sentry != nil {
+		defer p.Sentry.Flush(2 * time.Second)
 		p.Sentry.CaptureException(err, &sentry.EventHint{
-			Data:              fields,
 			OriginalException: err,
-		}, p.Config.SentryScope)
+		}, p.SentryScope(fields))
 	}
 }
 
