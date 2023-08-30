@@ -62,7 +62,7 @@ func (p *IFiberEx) result(c *fiber.Ctx, code int, body *IResponse) error {
 	if err != nil {
 		return c.SendStatus(500)
 	}
-	c.Response().Header.Add("ContentType", "application/json")
+	c.Response().Header.Add("Content-Type", "application/json; charset=utf-8")
 	return c.Status(code).SendString(string(rs))
 }
 
