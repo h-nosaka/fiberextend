@@ -3,6 +3,7 @@ package fiberextend
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"regexp"
 	"time"
 
@@ -20,6 +21,7 @@ type IMeta struct {
 type IError struct {
 	Code    string `json:"code"`
 	Field   string `json:"field,omitempty"`
+	Param   string `json:"param,omitempty"`
 	Message string `json:"message"`
 }
 
@@ -31,8 +33,8 @@ type IResponse struct {
 }
 
 type IRequestPaging struct {
-	Page int `json:"page,omitempty"` // 表示ページ(1~)
-	Per  int `json:"per,omitempty"`  // 表示数
+	Page *int `json:"page,omitempty"` // 表示ページ(1~)
+	Per  *int `json:"per,omitempty"`  // 表示数
 }
 
 func (p *IFiberEx) MetaMiddleware() func(*fiber.Ctx) error {
@@ -113,7 +115,7 @@ func ValidateMatch(fl validator.FieldLevel) bool {
 func (p *IFiberEx) Validation(src interface{}) []IError {
 	err := p.Validator.Struct(src)
 	if err != nil {
-		return p.ValidationParser(err.(validator.ValidationErrors))
+		return p.ValidationParser(src, err.(validator.ValidationErrors))
 	}
 	return nil
 }
@@ -121,7 +123,7 @@ func (p *IFiberEx) Validation(src interface{}) []IError {
 func (p *IFiberEx) SimpleValidation(src interface{}, field string, tag string) []IError {
 	err := p.Validator.Var(src, tag)
 	if err != nil {
-		errors := p.ValidationParser(err.(validator.ValidationErrors))
+		errors := p.ValidationParser(src, err.(validator.ValidationErrors))
 		cnt := len(errors)
 		for i := 0; i < cnt; i++ {
 			errors[i].Field = field
@@ -131,12 +133,20 @@ func (p *IFiberEx) SimpleValidation(src interface{}, field string, tag string) [
 	return nil
 }
 
-func (p *IFiberEx) ValidationParser(errors validator.ValidationErrors) []IError {
+func (p *IFiberEx) ValidationParser(src interface{}, errors validator.ValidationErrors) []IError {
 	rs := []IError{}
+	ref := reflect.TypeOf(src)
 	for _, err := range errors {
+		field := ""
+		for i := 0; i < ref.NumField(); i++ { // フィールド名をタグ名に変換
+			if ref.Field(i).Name == err.Field() {
+				field = ref.Field(i).Tag.Get("json")
+			}
+		}
 		rs = append(rs, IError{
 			Code:    "E40001",
-			Field:   err.Field(),
+			Field:   field,
+			Param:   err.Param(),
 			Message: fmt.Sprintf("ValidationError.%s", err.Tag()), // TODO: 多言語対応が必要
 		})
 	}

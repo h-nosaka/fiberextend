@@ -288,8 +288,8 @@ func New(config IFiberExConfig) *IFiberEx {
 	// sentry
 	if config.SentryDsn != nil {
 		Sentry, err = sentry.NewClient(sentry.ClientOptions{
-			Dsn:         *config.SentryDsn,
-			Environment: config.SentryEnv,
+			Dsn:              *config.SentryDsn,
+			Environment:      config.SentryEnv,
 			TracesSampleRate: 1.0,
 		})
 		if err != nil {
