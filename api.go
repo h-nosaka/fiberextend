@@ -85,6 +85,7 @@ func (p *IFiberEx) Result(c *fiber.Ctx, code int, results ...interface{}) error 
 	return p.result(c, code, &IResponse{Result: results[0]})
 }
 
+// Deprecated: should not be used
 func (p *IFiberEx) RequestParser(c *fiber.Ctx, params interface{}) bool {
 	if c.Method() == "GET" {
 		if err := c.QueryParser(params); err != nil {
@@ -101,6 +102,28 @@ func (p *IFiberEx) RequestParser(c *fiber.Ctx, params interface{}) bool {
 	}
 	if err := p.Validation(params); len(err) > 0 {
 		if err := p.ResultError(c, 400, fmt.Errorf("validation error: %+v", err), err...); err == nil {
+			return false
+		}
+	}
+	return true
+}
+
+func RequestParser[T comparable](ex *IFiberEx, c *fiber.Ctx, params *T) bool {
+	if c.Method() == "GET" {
+		if err := c.QueryParser(params); err != nil {
+			if err := ex.ResultError(c, 400, err); err == nil {
+				return false
+			}
+		}
+	} else {
+		if err := c.BodyParser(params); err != nil {
+			if err := ex.ResultError(c, 400, err); err == nil {
+				return false
+			}
+		}
+	}
+	if err := ex.Validation(*params); len(err) > 0 {
+		if err := ex.ResultError(c, 400, fmt.Errorf("validation error: %+v", err), err...); err == nil {
 			return false
 		}
 	}
@@ -135,20 +158,22 @@ func (p *IFiberEx) SimpleValidation(src interface{}, field string, tag string) [
 
 func (p *IFiberEx) ValidationParser(src interface{}, errors validator.ValidationErrors) []IError {
 	rs := []IError{}
-	ref := reflect.TypeOf(src)
 	for _, err := range errors {
-		field := ""
-		for i := 0; i < ref.NumField(); i++ { // フィールド名をタグ名に変換
-			if ref.Field(i).Name == err.Field() {
-				field = ref.Field(i).Tag.Get("json")
-			}
-		}
 		rs = append(rs, IError{
 			Code:    "E40001",
-			Field:   field,
+			Field:   GetJsonTag(src, err.Field()),
 			Param:   err.Param(),
 			Message: fmt.Sprintf("ValidationError.%s", err.Tag()), // TODO: 多言語対応が必要
 		})
+	}
+	return rs
+}
+
+func GetJsonTag[T comparable](src T, field string) string {
+	ref := reflect.TypeOf(src)
+	rs := field
+	if f, ok := ref.FieldByName(field); ok {
+		rs = f.Tag.Get("json")
 	}
 	return rs
 }
