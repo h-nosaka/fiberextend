@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -174,6 +175,10 @@ func GetJsonTag[T comparable](src T, field string) string {
 	rs := field
 	if f, ok := ref.FieldByName(field); ok {
 		rs = f.Tag.Get("json")
+	}
+	if strings.Contains(rs, ",") {
+		item := strings.Split(rs, ",")
+		rs = item[0]
 	}
 	return rs
 }

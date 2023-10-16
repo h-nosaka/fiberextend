@@ -34,3 +34,18 @@ func TestValidation(t *testing.T) {
 		t.Errorf("%+v", err)
 	}
 }
+
+type StructTest2 struct {
+	Name string `json:"name,omitempty"`
+}
+
+func TestGetJsonTag(t *testing.T) {
+	src := StructTest2{
+		Name: "qwerty",
+	}
+	rs := ext.GetJsonTag(src, "Name")
+	if rs != "name" {
+		t.Errorf("result string: %s", rs)
+	}
+	t.Log(rs)
+}
