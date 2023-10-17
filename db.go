@@ -16,9 +16,9 @@ func (p *IFiberExConfig) NewDB() *gorm.DB {
 	var db *gorm.DB
 	var err error
 	if p.DBConfig.IsPostgres != nil && *p.DBConfig.IsPostgres {
-		sslmode := "disable"
+		sslmode := "enable"
 		if p.DevMode != nil && *p.DevMode {
-			sslmode = "enable"
+			sslmode = "disable"
 		}
 		host := strings.Split(p.DBConfig.Addr, ":")
 		dsn := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%s sslmode=%s", p.DBConfig.User, p.DBConfig.Pass, p.DBConfig.DBName, host[0], host[1], sslmode)
