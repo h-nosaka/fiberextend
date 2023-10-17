@@ -16,7 +16,7 @@ func (p *IFiberExConfig) NewDB() *gorm.DB {
 	var db *gorm.DB
 	var err error
 	if p.DBConfig.IsPostgres != nil && *p.DBConfig.IsPostgres {
-		sslmode := "enable"
+		sslmode := "require"
 		if p.DevMode != nil && *p.DevMode {
 			sslmode = "disable"
 		}
