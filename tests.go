@@ -56,6 +56,7 @@ type ITestRequest struct {
 	Path    string
 	Headers map[string]string
 	Body    interface{}
+	Query   *map[string]string
 }
 
 func NewTest(t *testing.T, config IFiberExConfig) *IFiberExTest {
@@ -193,6 +194,9 @@ func (p ITestRequest) Call(test *apitest.APITest) *apitest.Request {
 	}
 	if p.Body != nil {
 		app = app.Body(p.ToString())
+	}
+	if p.Query != nil {
+		app = app.QueryParams(*p.Query)
 	}
 	return app
 }
