@@ -19,14 +19,14 @@ import (
 	"github.com/steinfletcher/apitest"
 	jsonpath "github.com/steinfletcher/apitest-jsonpath"
 	"golang.org/x/exp/slices"
+	"gorm.io/gorm"
 )
 
 type IFiberExTest struct {
-	Ex     *IFiberEx
-	App    *fiber.App
-	t      *testing.T
-	Redis  *miniredis.Miniredis
-	Tester *apitest.APITest
+	Ex    *IFiberEx
+	App   *fiber.App
+	t     *testing.T
+	Redis *miniredis.Miniredis
 }
 
 type ITestMethod int
@@ -57,6 +57,7 @@ type ITestRequest struct {
 	Headers map[string]string
 	Body    interface{}
 	Query   *map[string]string
+	Debug   bool
 }
 
 func NewTest(t *testing.T, config IFiberExConfig) *IFiberExTest {
@@ -80,8 +81,6 @@ func NewTest(t *testing.T, config IFiberExConfig) *IFiberExTest {
 		t:     t,
 		Redis: r,
 	}
-	// apitestを初期化
-	test.Tester = apitest.New().HandlerFunc(test.fiberToHandlerFunc())
 	// gormにデバグを追加
 	if os.Getenv("DEBUG") == "1" {
 		test.Ex.DB = test.Ex.DB.Debug()
@@ -110,15 +109,17 @@ func (p *IFiberExTest) DryJobs(names ...string) {
 
 func (p *IFiberExTest) Run(it string, tests func()) {
 	p.It(it)
+	var db *gorm.DB
 	if p.Ex.Config.UseDB {
+		db = p.Ex.DB
 		p.Ex.DB = p.Ex.DB.Begin() // トランザクション開始
-		p.Ex.DB.SavePoint(it)
 	}
 	// テスト実行
 	tests()
 	// ロールバック
 	if p.Ex.Config.UseDB {
-		p.Ex.DB = p.Ex.DB.RollbackTo(it) // dbをロールバックする
+		p.Ex.DB = p.Ex.DB.Rollback() // dbをロールバックする
+		p.Ex.DB = db
 	}
 	if p.Ex.Config.UseRedis {
 		p.Redis.FlushAll() // miniredisの中身をクリアする
@@ -143,7 +144,11 @@ func (p *IFiberExTest) It(message string) {
 
 func (p *IFiberExTest) Api(message string, request *ITestRequest, status int, asserts ...*ITestCase) {
 	p.It(message)
-	api := request.Call(p.Tester).Expect(p.t).Status(status)
+	tester := apitest.New()
+	if request.Debug {
+		tester = tester.Debug()
+	}
+	api := request.Call(tester.HandlerFunc(p.fiberToHandlerFunc())).Expect(p.t).Status(status)
 	for _, assert := range asserts {
 		p.It(assert.It)
 		api = api.Assert(assert.ApiAssert())
