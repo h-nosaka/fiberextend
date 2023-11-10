@@ -7,6 +7,7 @@ import (
 	"net"
 	"time"
 
+	"dario.cat/mergo"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/getsentry/sentry-go"
 	"github.com/go-playground/validator/v10"
@@ -17,7 +18,6 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"github.com/gofiber/swagger"
 	"github.com/google/uuid"
-	"github.com/imdario/mergo"
 	"github.com/redis/go-redis/v9"
 	"github.com/things-go/gormzap"
 	"go.uber.org/zap"
