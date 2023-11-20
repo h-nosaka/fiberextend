@@ -70,7 +70,11 @@ func (p *IFiberEx) result(c *fiber.Ctx, code int, body *IResponse) error {
 }
 
 func (p *IFiberEx) ResultError(c *fiber.Ctx, code int, err error, errors ...IError) error {
-	p.Log.Error(fmt.Sprintf("api error: %s", err))
+	if code == 500 {
+		p.LogError(err)
+	} else {
+		p.Log.Error(fmt.Sprintf("api error: %s", err))
+	}
 	return p.result(c, code, &IResponse{
 		Errors: errors,
 	})
