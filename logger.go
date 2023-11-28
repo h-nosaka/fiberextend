@@ -62,6 +62,7 @@ func (p *IFiberEx) SentryScope(fields []zap.Field) *sentry.Scope {
 
 func (p *IFiberEx) LogError(err error, fields ...zap.Field) {
 	p.Log.With(p.LogCaller()).Error(err.Error(), fields...)
+	p.CatchPreparedStatementsError(err)
 	if p.Sentry != nil {
 		defer p.Sentry.Flush(2 * time.Second)
 		p.Sentry.CaptureException(err, &sentry.EventHint{
