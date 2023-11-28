@@ -2,6 +2,7 @@ package fiberextend
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"net"
@@ -384,4 +385,28 @@ func (p *IFiberEx) IpAddr() string {
 		}
 	}
 	return ip
+}
+
+func (p *IFiberEx) ReconnectDB() {
+	p.ClearPreparedStatements()
+	db, _ := p.DB.DB()
+	defer db.Close() // 元の接続はcloseする
+	DB = p.Config.NewDB()
+	p.DB = DB
+}
+
+func (p *IFiberEx) ClearPreparedStatements() {
+	if p.Config.DBConfig.IsPostgres != nil && *p.Config.DBConfig.IsPostgres {
+		if err := p.DB.Exec("DEALLOCATE ALL;").Error; err != nil {
+			p.LogError(err)
+		}
+	}
+}
+
+func (p *IFiberEx) CatchPreparedStatementsError(err error) {
+	if err.Error() == "ERROR: cached plan must not change result type (SQLSTATE 0A000)" {
+		// 上記エラーが発生したらDBに再接続する
+		p.LogError(errors.New("キャッシュエラーのためDBに再接続"))
+		p.ReconnectDB()
+	}
 }
