@@ -10,9 +10,6 @@ import (
 )
 
 func (p *IFiberExConfig) NewDB() *gorm.DB {
-	if p.TestMode != nil && *p.TestMode {
-		p.DBConfig.DBName += "_test"
-	}
 	var db *gorm.DB
 	var err error
 	if p.DBConfig.IsPostgres != nil && *p.DBConfig.IsPostgres {

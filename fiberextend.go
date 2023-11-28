@@ -249,6 +249,9 @@ func New(config IFiberExConfig) *IFiberEx {
 		if GLog != nil {
 			config.DBConfig.Config.Logger = *GLog
 		}
+		if config.TestMode != nil && *config.TestMode {
+			config.DBConfig.DBName += "_test"
+		}
 		DB = config.NewDB()
 	}
 
