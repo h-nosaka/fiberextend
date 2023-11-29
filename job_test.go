@@ -40,7 +40,7 @@ func TestJob(t *testing.T) {
 				t.Error(err)
 			}
 		}, func() {
-			if err := test.Ex.JobEnqueue(job1.Name, job1.Class, job1.Args); err != nil {
+			if err := test.Ex.JobEnqueue(job1.Name, job1.Class, job1.Args()); err != nil {
 				t.Error(err)
 			}
 		}, &ext.ITestCase{

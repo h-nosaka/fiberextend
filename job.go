@@ -57,7 +57,7 @@ func (p *IFiberEx) NewJob(jobs ...*IJob) {
 
 	// cron実行のためのnode登録
 	if err := Redis.Set(context.Background(), cronActiveNodeKey, p.NodeId, time.Duration(0)).Err(); err != nil {
-		p.Log.Error(err.Error())
+		p.LogError(err)
 	}
 
 	jobrunner.Start()
@@ -65,7 +65,7 @@ func (p *IFiberEx) NewJob(jobs ...*IJob) {
 		workers.Process(job.Name, job.Proc, job.Concurrency, job.Middlewares...)
 		if job.Schedule != nil {
 			if err := jobrunner.Schedule(*job.Schedule, *job); err != nil {
-				p.Log.Error(err.Error(), zap.Any("job", *job))
+				p.LogError(err, zap.Any("job", *job))
 			}
 		}
 	}
@@ -82,7 +82,7 @@ func (p *IFiberEx) JobRun(jobs ...IJob) {
 
 func (p *IFiberEx) JobEnqueue(queue string, class string, args interface{}) error {
 	if _, err := workers.Enqueue(queue, class, args); err != nil {
-		p.Log.Error(err.Error(), zap.String("name", queue), zap.String("class", class), zap.Any("args", args))
+		p.LogError(err, zap.String("name", queue), zap.String("class", class), zap.Any("args", args))
 		return err
 	}
 	return nil
@@ -90,7 +90,7 @@ func (p *IFiberEx) JobEnqueue(queue string, class string, args interface{}) erro
 
 func (p *IFiberEx) JobEnqueueIn(queue string, class string, in float64, args interface{}) error {
 	if _, err := workers.EnqueueIn(queue, class, in, args); err != nil {
-		p.Log.Error(err.Error(), zap.String("name", queue), zap.String("class", class), zap.Float64("in", in), zap.Any("args", args))
+		p.LogError(err, zap.String("name", queue), zap.String("class", class), zap.Float64("in", in), zap.Any("args", args))
 		return err
 	}
 	return nil
@@ -98,16 +98,21 @@ func (p *IFiberEx) JobEnqueueIn(queue string, class string, in float64, args int
 
 func (p *IFiberEx) JobEnqueueAt(queue string, class string, at time.Time, args interface{}) error {
 	if _, err := workers.EnqueueAt(queue, class, at, args); err != nil {
-		p.Log.Error(err.Error(), zap.String("name", queue), zap.String("class", class), zap.String("at", at.String()), zap.Any("args", args))
+		p.LogError(err, zap.String("name", queue), zap.String("class", class), zap.String("at", at.String()), zap.Any("args", args))
 		return err
 	}
 	return nil
 }
 
 func (p *IFiberEx) checkCronNode() bool {
-	rs, err := p.Redis.Get(context.Background(), cronActiveNodeKey).Result()
-	if err != nil {
-		return false
+	if rs, err := p.Redis.Get(context.Background(), cronActiveNodeKey).Result(); err == nil {
+		if rs == p.NodeId {
+			return true
+		}
 	}
-	return rs == p.NodeId
+	// 次回実行時はアクティブノードを変更する
+	if err := Redis.Set(context.Background(), cronActiveNodeKey, p.NodeId, time.Duration(0)).Err(); err != nil {
+		p.LogError(err)
+	}
+	return false
 }
