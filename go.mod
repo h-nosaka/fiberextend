@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/bamzi/jobrunner v1.0.0
-	github.com/gofiber/fiber/v2 v2.50.0
+	github.com/gofiber/fiber/v2 v2.51.0
 	github.com/things-go/gormzap v0.0.10
 	go.uber.org/zap v1.26.0
 )
@@ -46,11 +46,11 @@ require (
 	github.com/swaggo/files/v2 v2.0.0 // indirect
 	github.com/swaggo/swag v1.16.2 // indirect
 	github.com/yuin/gopher-lua v1.1.0 // indirect
-	golang.org/x/crypto v0.15.0 // indirect
-	golang.org/x/net v0.18.0 // indirect
+	golang.org/x/crypto v0.16.0 // indirect
+	golang.org/x/net v0.19.0 // indirect
 	golang.org/x/sync v0.5.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
-	golang.org/x/tools v0.15.0 // indirect
+	golang.org/x/tools v0.16.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
@@ -59,13 +59,13 @@ require (
 	dario.cat/mergo v1.0.0
 	github.com/alicebob/miniredis/v2 v2.31.0
 	github.com/andybalholm/brotli v1.0.6 // indirect
-	github.com/elastic/go-elasticsearch/v8 v8.11.0
+	github.com/elastic/go-elasticsearch/v8 v8.11.1
 	github.com/getsentry/sentry-go v0.25.0
 	github.com/go-playground/validator/v10 v10.16.0
 	github.com/gofiber/swagger v0.1.14
 	github.com/google/uuid v1.4.0
 	github.com/jrallison/go-workers v0.0.0-20180112190529-dbf81d0b75bb
-	github.com/klauspost/compress v1.17.2 // indirect
+	github.com/klauspost/compress v1.17.3 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
@@ -78,12 +78,12 @@ require (
 	github.com/steinfletcher/apitest-jsonpath v1.7.2
 	github.com/tinylib/msgp v1.1.9 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	github.com/valyala/fasthttp v1.50.0 // indirect
+	github.com/valyala/fasthttp v1.51.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/exp v0.0.0-20231108232855-2478ac86f678
-	golang.org/x/sys v0.14.0 // indirect
+	golang.org/x/exp v0.0.0-20231127185646-65229373498e
+	golang.org/x/sys v0.15.0 // indirect
 	gorm.io/driver/mysql v1.5.2
 	gorm.io/driver/postgres v1.5.4
 	gorm.io/gorm v1.25.5
