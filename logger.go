@@ -19,7 +19,7 @@ func zapLogger(logger *zap.Logger) func(c *fiber.Ctx) error {
 		start := time.Now().Local()
 		chainErr := c.Next()
 		if chainErr != nil {
-			logger.Error(chainErr.Error())
+			logger.Error(chainErr.Error(), zap.String("requestid", c.Locals("requestid").(string)))
 		}
 		stop := time.Now().Local()
 
@@ -30,17 +30,11 @@ func zapLogger(logger *zap.Logger) func(c *fiber.Ctx) error {
 			zap.String("requestid", c.Locals("requestid").(string)),
 			zap.String("userid", c.Locals("userid").(string)),
 			zap.Int("status", c.Response().StatusCode()),
-			zap.String("method", c.Method()),
-			zap.String("path", c.Path()),
+			zap.Any("query", c.Queries()),
 			zap.String("body", string(c.Request().Body())),
+			zap.String("response", string(c.Response().Body())),
 		}
-
-		if chainErr != nil {
-			formatErr := chainErr.Error()
-			fields = append(fields, zap.String("error", formatErr))
-			logger.With(fields...).Error(formatErr)
-		}
-		logger.With(fields...).Info("api.request")
+		logger.With(fields...).Info(fmt.Sprintf("Access: %s %s", c.Method(), c.Path()))
 
 		return nil
 	}
@@ -91,6 +85,10 @@ func (p *IFiberEx) LogWarn(err error, fields ...zap.Field) {
 	}
 }
 
+func (p *IFiberEx) LogInfo(msg string, fields ...zap.Field) {
+	p.Log.With(p.LogCaller()).Info(msg, fields...)
+}
+
 func (p *IFiberEx) Println(args ...interface{}) {
 	p.Log.Info(fmt.Sprintln(args...), p.LogCaller())
 }
@@ -107,4 +105,12 @@ func (p *IFiberEx) LogCaller() zapcore.Field {
 		_, file, line, _ = runtime.Caller(i)
 	}
 	return zap.String("caller", fmt.Sprintf("%s:%d", file, line))
+}
+
+func (p *IFiberEx) ApiLogFields(c *fiber.Ctx, fields ...zapcore.Field) []zapcore.Field {
+	fields = append(fields,
+		zap.String("requestid", c.Locals("requestid").(string)),
+		zap.String("userid", c.Locals("userid").(string)),
+	)
+	return fields
 }
