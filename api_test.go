@@ -3,6 +3,7 @@ package fiberextend_test
 import (
 	"testing"
 
+	"github.com/h-nosaka/fiberextend"
 	ext "github.com/h-nosaka/fiberextend"
 )
 
@@ -15,22 +16,40 @@ func TestSimpleValidation(t *testing.T) {
 }
 
 type StructTest struct {
-	Name  string `validate:"required,match=^[a-z]+$"`
-	Email string `validate:"required,email"`
-	Age   int    `validate:"required,min=18,max=30"`
-	Sex   int    `validate:"required"`
+	Name     string `json:"name" validate:"required,match=^[a-z]+$"`
+	Email    string `json:"email" validate:"required,email"`
+	Age      int    `json:"age" validate:"required,min=18,max=30"`
+	Sex      int    `json:"sex" validate:"required"`
+	Password string `json:"password" validate:"required,password=12"`
 }
 
 func TestValidation(t *testing.T) {
 	ex := ext.New(ext.IFiberExConfig{})
 	src := StructTest{
-		Name:  "qwerty",
-		Email: "hoge@hoge.com",
-		Age:   20,
-		Sex:   1,
+		Name:     "qwerty",
+		Email:    "hoge@hoge.com",
+		Age:      20,
+		Sex:      1,
+		Password: "Q1w2e3r4t5!!",
 	}
 	err := ex.Validation(&src)
 	if err != nil {
+		t.Errorf("%+v", err)
+	}
+}
+
+func TestValidationError(t *testing.T) {
+	ex := ext.New(ext.IFiberExConfig{})
+	src := StructTest{
+		Name:     "qwerty",
+		Email:    "hoge@hoge.com",
+		Age:      20,
+		Sex:      1,
+		Password: "Q1w2e3r4t5!",
+	}
+	err := ex.Validation(src)
+	t.Log(fiberextend.ToPrettyJson(err))
+	if err == nil {
 		t.Errorf("%+v", err)
 	}
 }

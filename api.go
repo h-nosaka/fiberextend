@@ -140,6 +140,39 @@ func ValidateMatch(fl validator.FieldLevel) bool {
 	return r.MatchString(fl.Field().String())
 }
 
+// 正規表現共通関数
+func Match(reg, str string) bool {
+	r := regexp.MustCompile(reg).Match([]byte(str))
+	return r
+}
+
+func ValidatePassword(fl validator.FieldLevel) bool {
+	src := fl.Field().String()
+	cnt := 10
+	if len(fl.Param()) > 0 {
+		cnt = Atoi(fl.Param())
+	}
+	if ok := len(src) >= cnt; !ok { // 指定文字以上
+		return ok
+	}
+	if ok := Match("[a-z]", src); !ok { // 小文字を利用している
+		return ok
+	}
+	if ok := Match("[A-Z]", src); !ok { // 大文字を利用している
+		return ok
+	}
+	if ok := Match("[0-9]", src); !ok { // 数値を利用している
+		return ok
+	}
+	if ok := Match(`[!"#$%&'()\*\+\-\.,\/:;<=>?@\[\\\]^_{|}~]`, src); !ok { // 記号を利用している
+		return ok
+	}
+	if ok := Match(`^[0-9a-zA-Z!"#$%&'()\*\+\-\.,\/:;<=>?@\[\\\]^_{|}~]+$`, src); !ok { // 指定の文字種で構成されている
+		return ok
+	}
+	return true
+}
+
 func (p *IFiberEx) Validation(src interface{}) []IError {
 	err := p.Validator.Struct(src)
 	if err != nil {
@@ -177,6 +210,7 @@ func (p *IFiberEx) ValidationParser(src interface{}, errors validator.Validation
 func GetJsonTag[T comparable](src T, field string) string {
 	ref := reflect.TypeOf(src)
 	rs := field
+	fmt.Println(ref, rs)
 	if f, ok := ref.FieldByName(field); ok {
 		rs = f.Tag.Get("json")
 	}

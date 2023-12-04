@@ -286,6 +286,9 @@ func New(config IFiberExConfig) *IFiberEx {
 	if err := Validator.RegisterValidation("match", ValidateMatch); err != nil {
 		panic(err)
 	}
+	if err := Validator.RegisterValidation("password", ValidatePassword); err != nil {
+		panic(err)
+	}
 
 	// uuid
 	obj, err := uuid.NewRandom()

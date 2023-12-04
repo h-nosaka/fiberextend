@@ -35,7 +35,11 @@ func (p *IFiberExConfig) NewDB() *gorm.DB {
 		db, err = gorm.Open(mysql.Open(dsn), p.DBConfig.Config)
 	}
 	if err != nil {
-		panic(err)
+		if strings.Contains(err.Error(), p.DBConfig.Pass) {
+			panic(fmt.Errorf("DB接続エラー: host=%s, dbname=%s", p.DBConfig.Addr, p.DBConfig.DBName)) // パスワードが含まれている場合はログをマスクする
+		} else {
+			panic(err)
+		}
 	}
 	return db
 }
