@@ -210,7 +210,6 @@ func (p *IFiberEx) ValidationParser(src interface{}, errors validator.Validation
 func GetJsonTag[T comparable](src T, field string) string {
 	ref := reflect.TypeOf(src)
 	rs := field
-	fmt.Println(ref, rs)
 	if f, ok := ref.FieldByName(field); ok {
 		rs = f.Tag.Get("json")
 	}
