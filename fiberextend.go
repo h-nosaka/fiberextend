@@ -153,6 +153,10 @@ func Int(src int) *int {
 	return &src
 }
 
+func Int64(src int64) *int64 {
+	return &src
+}
+
 func Bool(src bool) *bool {
 	return &src
 }

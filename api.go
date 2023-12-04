@@ -121,7 +121,7 @@ func RequestParser[T comparable](ex *IFiberEx, c *fiber.Ctx, params *T) bool {
 			}
 		}
 	} else {
-		if err := c.BodyParser(params); err != nil {
+		if err := json.Unmarshal(c.Body(), params); err != nil { // BodyParserは型変換がおかしくなるので使わない
 			if err := ex.ResultError(c, 400, err); err == nil {
 				return false
 			}
