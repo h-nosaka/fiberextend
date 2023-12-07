@@ -44,11 +44,13 @@ const (
 )
 
 type ITestCase struct {
-	It     string             // テストケースの説明
-	Method ITestMethod        // assertしたい内容
-	Want   interface{}        // 期待値
-	Path   string             // jsonpath `$.id`
-	Store  func() interface{} // データの取得 pathが指定されていない場合に使用
+	It     string                               // テストケースの説明
+	Method ITestMethod                          // assertしたい内容
+	Want   interface{}                          // 期待値
+	Path   string                               // jsonpath `$.id`
+	Store  func() interface{}                   // データの取得 pathが指定されていない場合に使用
+	Result func(result interface{}) interface{} // データの取得して加工する
+	result interface{}                          // Resultの結果を格納する
 }
 
 type ITestRequest struct {
@@ -133,6 +135,9 @@ func (p *IFiberExTest) Run(it string, tests func()) {
 }
 
 func (p *IFiberExTest) It(message string) {
+	if len(message) == 0 {
+		return
+	}
 	i := 1
 	_, file, line, ok := runtime.Caller(i)
 	for ok && filepath.Base(file) == "tests.go" {
@@ -229,8 +234,7 @@ func (p *ITestCase) Error(message string) error {
 	return fmt.Errorf("%s:%d: %s", file, line, message)
 }
 
-func (p *ITestCase) Assert() error {
-	value := p.Store()
+func (p *ITestCase) assert(value interface{}) error {
 	switch p.Method {
 	case TestMethodEqual:
 		if value != p.Want {
@@ -270,6 +274,14 @@ func (p *ITestCase) Assert() error {
 	return nil
 }
 
+func (p *ITestCase) StoreAssert() error {
+	return p.assert(p.Store())
+}
+
+func (p *ITestCase) ResultAssert() error {
+	return p.assert(p.result)
+}
+
 func (p *ITestCase) ApiAssert() func(*http.Response, *http.Request) error {
 	if len(p.Path) > 0 {
 		switch p.Method {
@@ -294,7 +306,7 @@ func (p *ITestCase) ApiAssert() func(*http.Response, *http.Request) error {
 		}
 	}
 	return func(res *http.Response, req *http.Request) error {
-		return p.Assert()
+		return p.StoreAssert()
 	}
 }
 
@@ -304,7 +316,23 @@ func (p *IFiberExTest) Job(it string, before func(), job func(), asserts ...*ITe
 	job()
 	for _, assert := range asserts {
 		p.It(assert.It)
-		if err := assert.Assert(); err != nil {
+		if err := assert.StoreAssert(); err != nil {
+			p.t.Error(err)
+		}
+	}
+}
+
+func (p *IFiberExTest) Exec(it string, exec func() interface{}, asserts ...*ITestCase) {
+	p.It(it)
+	rs := exec()
+	for _, assert := range asserts {
+		p.It(assert.It)
+		if len(assert.Path) > 0 {
+			assert.result = StructPath(rs, assert.Path)
+		} else {
+			assert.result = assert.Result(rs)
+		}
+		if err := assert.ResultAssert(); err != nil {
 			p.t.Error(err)
 		}
 	}

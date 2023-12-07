@@ -2,6 +2,7 @@ package fiberextend_test
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"testing"
 	"time"
@@ -89,5 +90,38 @@ func TestApi(t *testing.T) {
 				Want: nil,
 			},
 		}...)
+	})
+}
+
+func TestExec(t *testing.T) {
+	test := ext.NewTest(t, ext.IFiberExConfig{
+		DevMode: ext.Bool(true),
+		UseDB:   false,
+		DBConfig: &ext.IDBConfig{
+			Addr:   "db:3306",
+			User:   "root",
+			Pass:   "qwerty",
+			DBName: "app",
+		},
+		UseRedis:     true,
+		RedisOptions: &redis.Options{},
+		UseES:        false,
+		ESConfig: &elasticsearch.Config{
+			Addresses: []string{"http://es:9200"},
+		},
+	})
+	test.Run("test1", func() {
+		test.Exec("sub1", func() interface{} {
+			fmt.Println(test.Ex.Config)
+			return test.Ex.Config
+		}, &ext.ITestCase{
+			It:   "it1",
+			Want: "db:3306",
+			Path: "DBConfig.Addr",
+		}, &ext.ITestCase{
+			It:   "it2",
+			Want: nil,
+			Path: "DBConfig.Addr.Foo",
+		})
 	})
 }

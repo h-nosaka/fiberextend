@@ -3,12 +3,16 @@ package fiberextend
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
+	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ettle/strcase"
 	"github.com/gertd/go-pluralize"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 )
 
 // json化時に文字列をフィルタリングする
@@ -165,4 +169,36 @@ func Atoi64(src string) int64 {
 // int64をstringに変換
 func Itoa(src int64) string {
 	return strconv.Itoa(int(src))
+}
+
+// 構造体から指定のパスの値を取得
+func StructPath(src interface{}, path string) (result interface{}) {
+	defer func() {
+		if rec := recover(); rec != nil {
+			result = nil
+		}
+	}()
+	ref := reflect.ValueOf(src)
+	key := path
+	if strings.Contains(path, ".") {
+		item := strings.Split(path, ".")
+		key = item[0]
+		value := ref.FieldByName(key)
+		// if value.IsNil() {
+		// 	return nil
+		// }
+		if value.Kind() == reflect.Ptr {
+			return StructPath(value.Elem().Interface(), strings.Join(item[1:], "."))
+		}
+		return StructPath(value.Interface(), strings.Join(item[1:], "."))
+	}
+	return ref.FieldByName(key).Interface()
+}
+
+// リカバー時にログを出力する
+func Recover(ex *IFiberEx) {
+	if rec := recover(); rec != nil {
+		ex.LogFatal(errors.New("Recovered"), zap.Any("recover", rec))
+		panic(rec) // ログ取得したらfiberのエラーハンドリングに任せる
+	}
 }
