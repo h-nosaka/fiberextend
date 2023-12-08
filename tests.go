@@ -2,6 +2,7 @@ package fiberextend
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -13,12 +14,12 @@ import (
 	"testing"
 
 	miniredis "github.com/alicebob/miniredis/v2"
+	"github.com/bitly/go-simplejson"
 	"github.com/gofiber/fiber/v2"
 	"github.com/jrallison/go-workers"
 	"github.com/redis/go-redis/v9"
 	"github.com/steinfletcher/apitest"
 	jsonpath "github.com/steinfletcher/apitest-jsonpath"
-	"golang.org/x/exp/slices"
 	"gorm.io/gorm"
 )
 
@@ -134,17 +135,21 @@ func (p *IFiberExTest) Run(it string, tests func()) {
 	}
 }
 
-func (p *IFiberExTest) It(message string) {
-	if len(message) == 0 {
-		return
-	}
+func (p *IFiberExTest) it(message string) string {
 	i := 1
 	_, file, line, ok := runtime.Caller(i)
 	for ok && filepath.Base(file) == "tests.go" {
 		i++
 		_, file, line, _ = runtime.Caller(i)
 	}
-	p.t.Logf("%s:%d: %s", file, line, message)
+	return fmt.Sprintf("%s:%d: %s", file, line, message)
+}
+
+func (p *IFiberExTest) It(message string) {
+	if len(message) == 0 {
+		return
+	}
+	p.t.Logf(p.it(message))
 }
 
 func (p *IFiberExTest) Api(message string, request *ITestRequest, status int, asserts ...*ITestCase) {
@@ -154,11 +159,33 @@ func (p *IFiberExTest) Api(message string, request *ITestRequest, status int, as
 		tester = tester.Debug()
 	}
 	api := request.Call(tester.HandlerFunc(p.fiberToHandlerFunc())).Expect(p.t).Status(status)
-	for i, assert := range asserts {
-		p.It(fmt.Sprintf("Case%d. %s", i+1, assert.It))
-		api = api.Assert(assert.ApiAssert())
-	}
+	var data *simplejson.Json
+	api = api.Assert(func(res *http.Response, req *http.Request) error {
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			p.t.Error(err)
+		}
+		buf, err := simplejson.NewJson(body)
+		if err != nil {
+			p.t.Error(err)
+		}
+		data = buf
+		return nil
+	})
 	api.End()
+	for i, assert := range asserts {
+		var err error
+		if len(assert.Path) > 0 {
+			err = assert.assert(JsonPath(data, assert.Path))
+		} else {
+			err = assert.StoreAssert()
+		}
+		if err != nil {
+			p.t.Error(p.it((fmt.Sprintf("[Case%d. %s]", i+1, assert.It))), err)
+		} else {
+			p.It(fmt.Sprintf("[Case%d. %s] ok", i+1, assert.It))
+		}
+	}
 }
 
 func (p *IFiberExTest) fiberToHandlerFunc() http.HandlerFunc {
@@ -224,14 +251,15 @@ func (p *ITestRequest) ToString() string {
 }
 
 func (p *ITestCase) Error(message string) error {
-	i := 1
-	_, file, line, ok := runtime.Caller(i)
-	files := []string{"tests.go", "apitest.go"}
-	for ok && slices.Contains(files, filepath.Base(file)) {
-		i++
-		_, file, line, _ = runtime.Caller(i)
-	}
-	return fmt.Errorf("%s:%d: %s", file, line, message)
+	return errors.New(message)
+	// i := 1
+	// _, file, line, ok := runtime.Caller(i)
+	// files := []string{"tests.go", "apitest.go"}
+	// for ok && slices.Contains(files, filepath.Base(file)) {
+	// 	i++
+	// 	_, file, line, _ = runtime.Caller(i)
+	// }
+	// return fmt.Errorf("%s:%d: %s", file, line, message)
 }
 
 func (p *ITestCase) assert(value interface{}) error {
@@ -257,7 +285,7 @@ func (p *ITestCase) assert(value interface{}) error {
 			return p.Error(fmt.Sprintf("assert match: value: %+v, want: %+v", value, p.Want))
 		}
 	case TestMethodLen:
-		if value.(int) != p.Want.(int) {
+		if len(value.([]any)) != p.Want.(int) {
 			return p.Error(fmt.Sprintf("assert len: value: %+v, want: %+v", value, p.Want))
 		}
 	case TestMethodGreaterThan:
@@ -283,6 +311,24 @@ func (p *ITestCase) ResultAssert() error {
 }
 
 func (p *ITestCase) ApiAssert() func(*http.Response, *http.Request) error {
+	return func(res *http.Response, req *http.Request) error {
+		if len(p.Path) > 0 {
+			body, err := io.ReadAll(res.Body)
+			if err != nil {
+				return err
+			}
+			data, err := simplejson.NewJson(body)
+			if err != nil {
+				return err
+			}
+			return p.assert(data.Get(p.Path).Interface())
+		}
+		return p.StoreAssert()
+	}
+}
+
+// Deprecated: should not be used
+func (p *ITestCase) ApiAssertOld() func(*http.Response, *http.Request) error {
 	if len(p.Path) > 0 {
 		switch p.Method {
 		case TestMethodEqual:
@@ -315,9 +361,10 @@ func (p *IFiberExTest) Job(it string, before func(), job func(), asserts ...*ITe
 	before()
 	job()
 	for i, assert := range asserts {
-		p.It(fmt.Sprintf("Case%d. %s", i+1, assert.It))
 		if err := assert.StoreAssert(); err != nil {
-			p.t.Error(err)
+			p.t.Error(p.it((fmt.Sprintf("[Case%d. %s]", i+1, assert.It))), err)
+		} else {
+			p.It(fmt.Sprintf("[Case%d. %s] ok", i+1, assert.It))
 		}
 	}
 }
@@ -326,14 +373,15 @@ func (p *IFiberExTest) Exec(it string, exec func() interface{}, asserts ...*ITes
 	p.It(it)
 	rs := exec()
 	for i, assert := range asserts {
-		p.It(fmt.Sprintf("Case%d. %s", i+1, assert.It))
 		if len(assert.Path) > 0 {
 			assert.result = StructPath(rs, assert.Path)
 		} else {
 			assert.result = assert.Result(rs)
 		}
 		if err := assert.ResultAssert(); err != nil {
-			p.t.Error(err)
+			p.t.Error(p.it((fmt.Sprintf("[Case%d. %s]", i+1, assert.It))), err)
+		} else {
+			p.It(fmt.Sprintf("[Case%d. %s] ok", i+1, assert.It))
 		}
 	}
 }

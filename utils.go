@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bitly/go-simplejson"
 	"github.com/ettle/strcase"
 	"github.com/gertd/go-pluralize"
 	"github.com/google/uuid"
@@ -199,6 +200,32 @@ func StructPath(src interface{}, path string) (result interface{}) {
 		return StructPath(value.Interface(), strings.Join(item[1:], "."))
 	}
 	return value.Interface()
+}
+
+// simplejsonから指定のパスの値を取得
+func JsonPath(src *simplejson.Json, path string) (result interface{}) {
+	defer func() {
+		if rec := recover(); rec != nil {
+			result = nil
+		}
+	}()
+	ref := reflect.ValueOf(src.Interface())
+	key := path
+	next := false
+	item := strings.Split(path, ".")
+	if strings.Contains(path, ".") {
+		key = item[0]
+		next = true
+	}
+	if ref.Kind() == reflect.Slice {
+		src = src.GetIndex(Atoi(key))
+	} else {
+		src = src.Get(key)
+	}
+	if next {
+		return JsonPath(src, strings.Join(item[1:], "."))
+	}
+	return src.Interface()
 }
 
 // リカバー時にログを出力する

@@ -43,7 +43,11 @@ func TestApi(t *testing.T) {
 		ex.App.Get("/", func(c *fiber.Ctx) error {
 			var rs time.Time
 			ex.DB.Raw("SELECT NOW()").Scan(&rs)
-			return ex.Result(c, 200, map[string]interface{}{"status": "ok", "now": rs.Local().String()})
+			return ex.Result(c, 200, map[string]interface{}{
+				"status": "ok",
+				"now":    rs.Local().String(),
+				"list":   []string{"foo", "bar"},
+			})
 		})
 	})
 	test.Run("test1", func() {
@@ -52,18 +56,11 @@ func TestApi(t *testing.T) {
 			t.Error(err)
 		}
 		test.Api("api1", &ext.ITestRequest{Method: "GET", Path: "/"}, 200, []*ext.ITestCase{
+			{Path: `result.status`, Want: "ok"},
+			{Method: ext.TestMethodNotEqual, Path: `result.now`, Want: nil},
+			{Path: `result.list.0`, Want: "foo"},
+			{Path: `result.list.1`, Want: "bar"},
 			{
-				Method: ext.TestMethodEqual,
-				Path:   `$.result.status`,
-				Want:   "ok",
-			},
-			{
-				Method: ext.TestMethodNotEqual,
-				Path:   `$.result.now`,
-				Want:   nil,
-			},
-			{
-				Method: ext.TestMethodEqual,
 				Store: func() interface{} {
 					rs, err := test.Ex.Redis.Get(context.TODO(), "test_key").Result()
 					if err != nil {
