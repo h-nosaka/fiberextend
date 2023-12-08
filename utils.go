@@ -180,19 +180,25 @@ func StructPath(src interface{}, path string) (result interface{}) {
 	}()
 	ref := reflect.ValueOf(src)
 	key := path
+	next := false
+	item := strings.Split(path, ".")
 	if strings.Contains(path, ".") {
-		item := strings.Split(path, ".")
 		key = item[0]
-		value := ref.FieldByName(key)
-		// if value.IsNil() {
-		// 	return nil
-		// }
-		if value.Kind() == reflect.Ptr {
-			return StructPath(value.Elem().Interface(), strings.Join(item[1:], "."))
-		}
+		next = true
+	}
+	value := ref
+	if value.Kind() == reflect.Slice {
+		value = value.Index(Atoi(key))
+	} else {
+		value = ref.FieldByName(key)
+	}
+	if value.Kind() == reflect.Ptr {
+		value = value.Elem()
+	}
+	if next {
 		return StructPath(value.Interface(), strings.Join(item[1:], "."))
 	}
-	return ref.FieldByName(key).Interface()
+	return value.Interface()
 }
 
 // リカバー時にログを出力する

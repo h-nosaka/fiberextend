@@ -2,13 +2,13 @@ package fiberextend_test
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"testing"
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/gofiber/fiber/v2"
+	"github.com/h-nosaka/fiberextend"
 	ext "github.com/h-nosaka/fiberextend"
 	"github.com/redis/go-redis/v9"
 )
@@ -93,6 +93,23 @@ func TestApi(t *testing.T) {
 	})
 }
 
+type ArrayStruct struct {
+	Data  ArrayStructData
+	List  []string
+	PData *ArrayStructData
+	PList *[]*string
+}
+
+type ArrayStructData struct {
+	List  []ArrayStructList
+	PList *[]*ArrayStructList
+}
+
+type ArrayStructList struct {
+	Name  string
+	PName *string
+}
+
 func TestExec(t *testing.T) {
 	test := ext.NewTest(t, ext.IFiberExConfig{
 		DevMode: ext.Bool(true),
@@ -110,9 +127,30 @@ func TestExec(t *testing.T) {
 			Addresses: []string{"http://es:9200"},
 		},
 	})
+	array := ArrayStruct{
+		Data: ArrayStructData{
+			List: []ArrayStructList{
+				{Name: "foo"},
+				{Name: "bar"},
+			},
+		},
+		List: []string{
+			"foo",
+			"bar",
+		},
+		PData: &ArrayStructData{
+			PList: &[]*ArrayStructList{
+				{PName: fiberextend.String("foo")},
+				{PName: fiberextend.String("bar")},
+			},
+		},
+		PList: &[]*string{
+			fiberextend.String("foo"),
+			fiberextend.String("bar"),
+		},
+	}
 	test.Run("test1", func() {
 		test.Exec("sub1", func() interface{} {
-			fmt.Println(test.Ex.Config)
 			return test.Ex.Config
 		}, &ext.ITestCase{
 			It:   "it1",
@@ -122,6 +160,41 @@ func TestExec(t *testing.T) {
 			It:   "it2",
 			Want: nil,
 			Path: "DBConfig.Addr.Foo",
+		})
+		test.Exec("sub2", func() interface{} {
+			return array
+		}, &ext.ITestCase{
+			It:   "it1",
+			Want: "foo",
+			Path: "Data.List.0.Name",
+		}, &ext.ITestCase{
+			It:   "it2",
+			Want: "bar",
+			Path: "Data.List.1.Name",
+		}, &ext.ITestCase{
+			It:   "it3",
+			Want: "foo",
+			Path: "List.0",
+		}, &ext.ITestCase{
+			It:   "it4",
+			Want: "bar",
+			Path: "List.1",
+		}, &ext.ITestCase{
+			It:   "it5",
+			Want: "foo",
+			Path: "PData.PList.0.PName",
+		}, &ext.ITestCase{
+			It:   "it6",
+			Want: "bar",
+			Path: "PData.PList.1.PName",
+		}, &ext.ITestCase{
+			It:   "it7",
+			Want: "foo",
+			Path: "PList.0",
+		}, &ext.ITestCase{
+			It:   "it8",
+			Want: "bar",
+			Path: "PList.1",
 		})
 	})
 }
