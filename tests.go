@@ -2,12 +2,12 @@ package fiberextend
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"runtime"
 	"strings"
@@ -250,54 +250,47 @@ func (p *ITestRequest) ToString() string {
 	return ""
 }
 
-func (p *ITestCase) Error(message string) error {
-	return errors.New(message)
-	// i := 1
-	// _, file, line, ok := runtime.Caller(i)
-	// files := []string{"tests.go", "apitest.go"}
-	// for ok && slices.Contains(files, filepath.Base(file)) {
-	// 	i++
-	// 	_, file, line, _ = runtime.Caller(i)
-	// }
-	// return fmt.Errorf("%s:%d: %s", file, line, message)
-}
-
 func (p *ITestCase) assert(value interface{}) error {
 	switch p.Method {
 	case TestMethodEqual:
 		if value != p.Want {
-			return p.Error(fmt.Sprintf("assert equal: value: %+v, want: %+v", value, p.Want))
+			return fmt.Errorf("assert equal: value: (%T)%+v, want: %+v", value, value, p.Want)
 		}
 	case TestMethodNotEqual:
 		if value == p.Want {
-			return p.Error(fmt.Sprintf("assert not equal: value: %+v, want: %+v", value, p.Want))
+			return fmt.Errorf("assert not equal: value: %+v, want: %+v", value, p.Want)
 		}
 	case TestMethodContains:
 		if strings.Contains(value.(string), p.Want.(string)) {
-			return p.Error(fmt.Sprintf("assert contains: value: %+v, want: %+v", value, p.Want))
+			return fmt.Errorf("assert contains: value: %+v, want: %+v", value, p.Want)
 		}
 	case TestMethodMatches:
 		r, err := regexp.Compile(p.Want.(string))
 		if err != nil {
-			return p.Error(fmt.Sprintf("assert match: %s", err))
+			return fmt.Errorf("assert match: %s", err)
 		}
 		if !r.Match([]byte(value.(string))) {
-			return p.Error(fmt.Sprintf("assert match: value: %+v, want: %+v", value, p.Want))
+			return fmt.Errorf("assert match: value: %+v, want: %+v", value, p.Want)
 		}
 	case TestMethodLen:
-		if len(value.([]any)) != p.Want.(int) {
-			return p.Error(fmt.Sprintf("assert len: value: %+v, want: %+v", value, p.Want))
+		ref := reflect.ValueOf(value)
+		if ref.Kind() == reflect.Slice {
+			if ref.Len() != p.Want.(int) {
+				return fmt.Errorf("assert len: value: %+v, want: %+v", ref.Len(), p.Want)
+			}
+		} else {
+			return fmt.Errorf("assert len: value: %+v, want: %+v", value, p.Want)
 		}
 	case TestMethodGreaterThan:
 		if value.(int) < p.Want.(int) {
-			return p.Error(fmt.Sprintf("assert greater than: value: %+v, want: %+v", value, p.Want))
+			return fmt.Errorf("assert greater than: value: %+v, want: %+v", value, p.Want)
 		}
 	case TestMethodLessThan:
 		if value.(int) > p.Want.(int) {
-			return p.Error(fmt.Sprintf("assert less than: value: %+v, want: %+v", value, p.Want))
+			return fmt.Errorf("assert less than: value: %+v, want: %+v", value, p.Want)
 		}
 	default:
-		return p.Error("error: not support TestMethod")
+		return fmt.Errorf("error: not support TestMethod")
 	}
 	return nil
 }
