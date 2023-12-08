@@ -154,8 +154,8 @@ func (p *IFiberExTest) Api(message string, request *ITestRequest, status int, as
 		tester = tester.Debug()
 	}
 	api := request.Call(tester.HandlerFunc(p.fiberToHandlerFunc())).Expect(p.t).Status(status)
-	for _, assert := range asserts {
-		p.It(assert.It)
+	for i, assert := range asserts {
+		p.It(fmt.Sprintf("Case%d. %s", i+1, assert.It))
 		api = api.Assert(assert.ApiAssert())
 	}
 	api.End()
@@ -314,8 +314,8 @@ func (p *IFiberExTest) Job(it string, before func(), job func(), asserts ...*ITe
 	p.It(it)
 	before()
 	job()
-	for _, assert := range asserts {
-		p.It(assert.It)
+	for i, assert := range asserts {
+		p.It(fmt.Sprintf("Case%d. %s", i+1, assert.It))
 		if err := assert.StoreAssert(); err != nil {
 			p.t.Error(err)
 		}
@@ -325,8 +325,8 @@ func (p *IFiberExTest) Job(it string, before func(), job func(), asserts ...*ITe
 func (p *IFiberExTest) Exec(it string, exec func() interface{}, asserts ...*ITestCase) {
 	p.It(it)
 	rs := exec()
-	for _, assert := range asserts {
-		p.It(assert.It)
+	for i, assert := range asserts {
+		p.It(fmt.Sprintf("Case%d. %s", i+1, assert.It))
 		if len(assert.Path) > 0 {
 			assert.result = StructPath(rs, assert.Path)
 		} else {
