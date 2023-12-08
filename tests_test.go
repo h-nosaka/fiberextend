@@ -47,6 +47,8 @@ func TestApi(t *testing.T) {
 				"status": "ok",
 				"now":    rs.Local().String(),
 				"list":   []string{"foo", "bar"},
+				"int":    10,
+				"float":  10.08,
 			})
 		})
 	})
@@ -60,6 +62,8 @@ func TestApi(t *testing.T) {
 			{Method: ext.TestMethodNotEqual, Path: `result.now`, Want: nil},
 			{Path: `result.list.0`, Want: "foo"},
 			{Path: `result.list.1`, Want: "bar"},
+			{Path: `result.int`, Want: int64(10)},
+			{Path: `result.float`, Want: 10.08},
 			{
 				Store: func() interface{} {
 					rs, err := test.Ex.Redis.Get(context.TODO(), "test_key").Result()

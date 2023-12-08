@@ -188,10 +188,13 @@ func StructPath(src interface{}, path string) (result interface{}) {
 		next = true
 	}
 	value := ref
+	if value.Kind() == reflect.Ptr {
+		value = value.Elem()
+	}
 	if value.Kind() == reflect.Slice {
 		value = value.Index(Atoi(key))
 	} else {
-		value = ref.FieldByName(key)
+		value = value.FieldByName(key)
 	}
 	if value.Kind() == reflect.Ptr {
 		value = value.Elem()
@@ -225,7 +228,24 @@ func JsonPath(src *simplejson.Json, path string) (result interface{}) {
 	if next {
 		return JsonPath(src, strings.Join(item[1:], "."))
 	}
-	return src.Interface()
+	out := src.Interface()
+	switch s := out.(type) {
+	case json.Number:
+		if strings.Contains(s.String(), ".") {
+			rs, err := s.Float64()
+			if err != nil {
+				return s.String()
+			}
+			return rs
+		} else {
+			rs, err := s.Int64()
+			if err != nil {
+				return s.String()
+			}
+			return rs
+		}
+	}
+	return out
 }
 
 // リカバー時にログを出力する
