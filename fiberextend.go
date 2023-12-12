@@ -359,10 +359,13 @@ func (p *IFiberEx) NewApp() *fiber.App {
 	}))
 	app.Use(requestid.New())
 	app.Use(zapLogger(p.Log))
-	if p.Config.IconFile != nil && p.Config.IconUrl != nil {
+	if p.Config.IconFile != nil {
 		app.Use(favicon.New(favicon.Config{
 			File: *p.Config.IconFile,
-			URL:  *p.Config.IconUrl,
+		}))
+	} else if p.Config.IconUrl != nil {
+		app.Use(favicon.New(favicon.Config{
+			URL: *p.Config.IconUrl,
 		}))
 	} else {
 		app.Use(favicon.New())
