@@ -29,7 +29,7 @@ type Errors struct {
 	trace []string
 }
 
-var LocalFilePath = "/opt/app"
+var LocalFilePath = ""
 
 func InitErrors(path string) {
 	LocalFilePath = path
@@ -64,7 +64,7 @@ func trace(count int, max int) []string {
 	ok := true
 	for ok {
 		_, file, line, ok = runtime.Caller(count)
-		if strings.Contains(file, LocalFilePath) {
+		if LocalFilePath == "" || strings.Contains(file, LocalFilePath) {
 			src = append(src, fmt.Sprintf("%s:%d", file, line))
 		}
 		count++
