@@ -71,9 +71,9 @@ func (p *IFiberEx) result(c *fiber.Ctx, code int, body *IResponse) error {
 
 func (p *IFiberEx) ResultError(c *fiber.Ctx, code int, err error, errors ...IError) error {
 	if code == 500 {
-		p.LogError(err, p.ApiLogFields(c)...)
+		p.LogError(err, p.ApiErrorLogFields(c, err)...)
 	} else {
-		p.Log.With(p.LogCaller()).Error(fmt.Sprintf("api error: %s", err), p.ApiLogFields(c)...)
+		p.Log.With(p.LogCaller()).Error(fmt.Sprintf("api error: %s", err), p.ApiErrorLogFields(c, err)...)
 	}
 	return p.result(c, code, &IResponse{
 		Errors: errors,
@@ -81,6 +81,9 @@ func (p *IFiberEx) ResultError(c *fiber.Ctx, code int, err error, errors ...IErr
 }
 
 func (p *IFiberEx) Result(c *fiber.Ctx, code int, results ...interface{}) error {
+	if c.Response().StatusCode() > 300 { // レスポンスがすでに設定されている場合は何もしない
+		return nil
+	}
 	cnt := len(results)
 	if cnt == 0 {
 		return p.ResultError(c, 204, fmt.Errorf("no content: %+v", results))

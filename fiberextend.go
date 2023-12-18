@@ -226,6 +226,8 @@ func New(config IFiberExConfig) *IFiberEx {
 		} else {
 			con = zap.NewProductionConfig()
 		}
+		con.DisableCaller = true     // 呼び出し元は表示しない
+		con.DisableStacktrace = true // スタックトレースは表示しない
 		logger, err := con.Build()
 		if err != nil {
 			panic(err)

@@ -54,8 +54,13 @@ func (p *IFiberEx) SentryScope(fields []zap.Field) *sentry.Scope {
 	return scope
 }
 
-func (p *IFiberEx) LogError(err error, fields ...zap.Field) {
-	p.Log.With(p.LogCaller()).Error(err.Error(), fields...)
+func (p *IFiberEx) LogTrace(err error, fields ...zap.Field) *zap.Logger {
+	fields = append(fields, p.LogCaller())
+	if err != nil {
+		if e, ok := err.(*Errors); ok {
+			fields = append(fields, zap.Any("stacktrace", e.Trace()))
+		}
+	}
 	p.CatchPreparedStatementsError(err)
 	if p.Sentry != nil {
 		defer p.Sentry.Flush(2 * time.Second)
@@ -63,26 +68,19 @@ func (p *IFiberEx) LogError(err error, fields ...zap.Field) {
 			OriginalException: err,
 		}, p.SentryScope(fields))
 	}
+	return p.Log.With(fields...)
+}
+
+func (p *IFiberEx) LogError(err error, fields ...zap.Field) {
+	p.LogTrace(err, fields...).Error(err.Error())
 }
 
 func (p *IFiberEx) LogFatal(err error, fields ...zap.Field) {
-	p.Log.With(p.LogCaller()).Fatal(err.Error(), fields...)
-	if p.Sentry != nil {
-		defer p.Sentry.Flush(2 * time.Second)
-		p.Sentry.CaptureException(err, &sentry.EventHint{
-			OriginalException: err,
-		}, p.SentryScope(fields))
-	}
+	p.LogTrace(err, fields...).Fatal(err.Error())
 }
 
 func (p *IFiberEx) LogWarn(err error, fields ...zap.Field) {
-	p.Log.With(p.LogCaller()).Warn(err.Error(), fields...)
-	if p.Sentry != nil {
-		defer p.Sentry.Flush(2 * time.Second)
-		p.Sentry.CaptureException(err, &sentry.EventHint{
-			OriginalException: err,
-		}, p.SentryScope(fields))
-	}
+	p.LogTrace(err, fields...).Warn(err.Error())
 }
 
 func (p *IFiberEx) LogInfo(msg string, fields ...zap.Field) {
@@ -112,5 +110,16 @@ func (p *IFiberEx) ApiLogFields(c *fiber.Ctx, fields ...zapcore.Field) []zapcore
 		zap.String("requestid", c.Locals("requestid").(string)),
 		zap.String("userid", c.Locals("userid").(string)),
 	)
+	return fields
+}
+
+func (p *IFiberEx) ApiErrorLogFields(c *fiber.Ctx, err error, fields ...zapcore.Field) []zapcore.Field {
+	if err != nil {
+		if _, ok := err.(*Errors); !ok {
+			err = NewErrors(err)
+		}
+		fields = append(fields, zap.Any("stacktrace", err.(*Errors).Trace()))
+	}
+	fields = p.ApiLogFields(c, fields...)
 	return fields
 }
